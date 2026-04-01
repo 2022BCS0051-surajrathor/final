@@ -1,0 +1,38 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.10
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install dvc[s3]
+        pip install mlflow
+
+    - name: Pull Data from DVC
+      run: |
+        dvc pull
+
+    - name: Train Model
+      run: |
+        python train.py
+
+    - name: Run API test
+      run: |
+        python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
+        sleep 5
+        curl http://127.0.0.1:8000/
